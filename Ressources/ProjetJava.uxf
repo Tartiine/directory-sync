@@ -1,0 +1,40 @@
+<diagram program="umletino" version="15.0.0"><zoom_level>11</zoom_level><help_text>Space for diagram notes</help_text><element><id>UMLActor</id><coordinates><x>266</x><y>110</y><w>66</w><h>121</h></coordinates><panel_attributes>_:User_</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>409</x><y>143</y><w>66</w><h>44</h></coordinates><panel_attributes>_file_
+group=group-3</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>497</x><y>176</y><w>66</w><h>44</h></coordinates><panel_attributes>_file'_
+group=group-3</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLPackage</id><coordinates><x>387</x><y>99</y><w>198</w><h>143</h></coordinates><panel_attributes>D
+group=group-3</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLDeployment</id><coordinates><x>376</x><y>55</y><w>231</w><h>198</h></coordinates><panel_attributes>PC1
+group=group-3</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>750</x><y>143</y><w>66</w><h>44</h></coordinates><panel_attributes>_file_
+group=group-4</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>838</x><y>176</y><w>66</w><h>44</h></coordinates><panel_attributes>_file'_
+group=group-4</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLPackage</id><coordinates><x>728</x><y>99</y><w>198</w><h>143</h></coordinates><panel_attributes>D'
+group=group-4</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLDeployment</id><coordinates><x>717</x><y>55</y><w>231</w><h>198</h></coordinates><panel_attributes>PC2
+group=group-4</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>629</x><y>275</y><w>66</w><h>44</h></coordinates><panel_attributes>_Clone_</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>596</x><y>132</y><w>143</w><h>55</h></coordinates><panel_attributes>
+&lt;&lt;network&gt;&gt;</panel_attributes><additional_attributes>10;20;110;20</additional_attributes></element><element><id>Relation</id><coordinates><x>310</x><y>143</y><w>110</w><h>44</h></coordinates><panel_attributes>lt=&lt;-
+1:new</panel_attributes><additional_attributes>80;20;10;20</additional_attributes></element><element><id>Relation</id><coordinates><x>684</x><y>187</y><w>132</w><h>121</h></coordinates><panel_attributes>lt=&lt;-
+1.1:new</panel_attributes><additional_attributes>80;10;50;90;10;90</additional_attributes></element><element><id>Relation</id><coordinates><x>508</x><y>220</y><w>143</w><h>88</h></coordinates><panel_attributes>lt=&lt;-
+2.1:new</panel_attributes><additional_attributes>10;10;10;60;110;60</additional_attributes></element><element><id>UMLActor</id><coordinates><x>1003</x><y>110</y><w>66</w><h>121</h></coordinates><panel_attributes>_:User_</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>904</x><y>154</y><w>121</w><h>66</h></coordinates><panel_attributes>lt=&lt;-
+2:new</panel_attributes><additional_attributes>10;40;90;10</additional_attributes></element><element><id>Relation</id><coordinates><x>552</x><y>220</y><w>110</w><h>77</h></coordinates><panel_attributes>lt=&lt;.
+&lt;&lt;analyze&gt;&gt;</panel_attributes><additional_attributes>10;10;80;50</additional_attributes></element><element><id>Relation</id><coordinates><x>673</x><y>187</y><w>121</w><h>110</h></coordinates><panel_attributes>lt=&lt;.
+&lt;&lt;update&gt;&gt;</panel_attributes><additional_attributes>70;10;10;80</additional_attributes></element><element><id>UMLClass</id><coordinates><x>376</x><y>396</y><w>231</w><h>165</h></coordinates><panel_attributes>DirectorySync
+--
+-interface:Interface
+-network:Network
+--
+main()
+analyse():bool
+update():int</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>662</x><y>396</y><w>231</w><h>165</h></coordinates><panel_attributes>Directory
+--
+-path:String
+-files:File[]
+--
+updateFile(f:File)
+updateDirectory()</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>662</x><y>616</y><w>231</w><h>165</h></coordinates><panel_attributes>Network
+--
+-linkedDirectories:Directory[]
+--
+Fonctions de synchronisation
+copyFromDir(dir:Directory)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>376</x><y>616</y><w>231</w><h>165</h></coordinates><panel_attributes>Interface (utiliser Swing)
+--
+Objets de l'interface
+--
+Fonctions de l'interface</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLNote</id><coordinates><x>992</x><y>418</y><w>671</w><h>66</h></coordinates><panel_attributes>new --&gt; Si le fichier n'existe pas chez l'autre, on le crée
+edit --&gt; On supprime le fichier chez l'autre et on le recrée avec les modifications (on peut créer une copie)
+remove --&gt; On supprime le fichier chez l'autre</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>772</x><y>451</y><w>242</w><h>44</h></coordinates><panel_attributes>lt=.</panel_attributes><additional_attributes>10;20;200;10</additional_attributes></element></diagram>
