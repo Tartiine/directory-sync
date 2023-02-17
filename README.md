@@ -1,4 +1,4 @@
-# [directory-synchronization] College project ENSISA 1A IR.
+# [directory-sync] College project ENSISA 1A IR.
 
 Made by [Isaac Dalberto](https://github.com/IDalb) and [Sofia Saadi](https://github.com/Tartiine)
 
