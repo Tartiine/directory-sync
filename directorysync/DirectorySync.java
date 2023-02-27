@@ -48,10 +48,13 @@ public class DirectorySync {
 
                     // Handle specific event types
                     if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
+                        //CODE POUR CREER UN FICHIER
                         System.out.format("File '%s' created.%n", filename);
                     } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
+                        //CODE POUR MODIFIER UN FICHIER
                         System.out.format("File '%s' modified.%n", filename);
                     } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
+                        //CODE POUR SUPPRIMER UN FICHIER
                         System.out.format("File '%s' deleted.%n", filename);
                     }
                 }
