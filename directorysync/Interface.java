@@ -2,6 +2,7 @@ package directorysync;
 
 import java.awt.*;
 import java.awt.event.*;
+
 import javax.swing.*;
 
 public class Interface {
@@ -18,9 +19,9 @@ public class Interface {
     JTextField trgtPath = new JTextField(10);
 
     JPanel panel_syncButtons = new JPanel();
-    JButton button_softSync = new JButton("Soft Synchronisation");
-    JButton button_hardSync = new JButton("Hard Synchronisation");
-    JButton button_mutualSync = new JButton("Mutual synchronisation (ignore conflicts)");
+    JButton button_softSync = new JButton("Soft Synchronization");
+    JButton button_hardSync = new JButton("Hard Synchronization");
+    JButton button_mutualSync = new JButton("Mutual synchronization (ignore conflicts)");
 
     JLabel label_output = new JLabel("Output:");
     JLabel output = new JLabel("");
@@ -51,28 +52,39 @@ public class Interface {
 
         //Affects the events to the buttons
         button_hardSync.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent event) {
                 output.setText(
-                    "<html>Starting hard synchronisation<br>"
+                    "<html>Starting hard synchronization<br>"
                     + "from: " + srcPath.getText() + "<br>"
                     + "to: " + trgtPath.getText() + "<br>"
-                    + "Hard synchronisation complete!</html>");
+                    + "Hard synchronization complete!</html>");
+                try {
+                    DirectorySync.hardSynchronization(trgtPath.getText(), srcPath.getText());
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                    JOptionPane.showMessageDialog(new JFrame(), exception.getMessage(), "Error", 0);
+                }
             }
         });
         button_softSync.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent event) {
                 output.setText(
-                    "<html>Starting soft synchronisation<br>"
+                    "<html>Starting soft synchronization<br>"
                     + "from: " + srcPath.getText() + "<br>"
                     + "to: " + trgtPath.getText() + "<br>"
-                    + "Soft synchronisation complete!</html>");
+                    + "Soft synchronization complete!</html>");
+                try {
+
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                }
             }
         });
         button_mutualSync.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent event) {
                 output.setText(
-                    "<html>Starting mutual synchronisation<br>"
-                    + "Mutual synchronisation complete!</html>");
+                    "<html>Starting mutual synchronization<br>"
+                    + "Mutual synchronization complete!</html>");
             }
         });
     }
