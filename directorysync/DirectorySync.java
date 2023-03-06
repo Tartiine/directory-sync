@@ -1,5 +1,5 @@
 /** 
-* Class name  : 
+* Class name  : DirectorySync
 * Description   : Directory synchronization project
 * @author Isaac Dalberto, Sofia Saadi
 * Date          : 
