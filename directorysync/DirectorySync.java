@@ -7,135 +7,121 @@
 
 package directorysync;
 
-import java.io.IOException;
 import java.nio.file.*;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.net.URI;
+import java.util.Comparator;
+import java.io.IOException;
 
 public class DirectorySync {
 
-    public static void deleteAll (File targetDirectory) {
-        File[] oldFiles = targetDirectory.listFiles();
+    public static Path targetDirectory = Paths.get("C:/Users/sosob/OneDrive/Bureau/trgDir");
+    public static Path srcDirectory = Paths.get("C:/Users/sosob/OneDrive/Bureau/srcDir");
 
-        for (File file : oldFiles) {
-            if (file.isFile()) {
-                System.out.println("Deleting file: " + file.getName());
-            }
-            else if (file.isDirectory()) {
-                deleteAll(file);
-                System.out.println("Deleting directory: " + file.getName());
-            }
-            file.delete();
+
+    public static void deleteAll(Path targetDirectory) throws IOException {
+        Files.walk(targetDirectory)
+            .sorted(Comparator.reverseOrder())
+            .forEach(path -> {
+                try {
+                    System.out.println("Deleting file: " + path);
+                    Files.delete(path);
+                } catch (IOException e) {
+                    System.err.println("Failed to delete " + path + ": " + e.getMessage());
+                }
+            });
+    }
+
+    public static void deleteFile(Path filename) {
+        try {
+            System.out.println("Deleting file: " + filename.getFileName());
+            Files.delete(filename);
+        } catch (IOException e) {
+            System.err.println("Failed to delete " + filename + ": " + e.getMessage());
         }
     }
 
-    public static void copyAll (File targetDirectory, File srcDirectory) throws FileNotFoundException, IOException {
-        File[] newFiles = srcDirectory.listFiles();
-        
-        for (File file : newFiles) {
-            if (file.isFile()) {
-                System.out.println("Copying file: " + file.getName());
-                BufferedInputStream bInStream = new BufferedInputStream(new FileInputStream(file));
-                byte[] data = new byte[(int) file.length()];
-                bInStream.read(data);
-                bInStream.close();
-    
-                File newFile = new File(targetDirectory, file.getName());
-                newFile.createNewFile();
-                BufferedOutputStream bOutStream = new BufferedOutputStream(new FileOutputStream(newFile));
-                bOutStream.write(data);
-                bOutStream.close();
-            }
-            else if (file.isDirectory()) {
-                System.out.println("Copying directory: " + file.getName());
-                File newDir = new File(targetDirectory, file.getName());
-                newDir.mkdirs();
-                copyAll(newDir, file);
-            }
-        }
+
+    public static void copyAll(Path targetDirectory, Path srcDirectory) throws IOException {
+        Files.walk(srcDirectory)
+            .forEach(path -> {
+                try {
+                    Path targetPath = targetDirectory.resolve(srcDirectory.relativize(path));
+                    if (Files.isDirectory(path)) {
+                        System.out.println("Copying directory: " + path.getFileName());
+                        Files.createDirectory(targetPath);
+                    } else {
+                        System.out.println("Copying file: " + path.getFileName());
+                        Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                } catch (IOException e) {
+                    System.err.println("Failed to copy " + path.getFileName() + ": " + e.getMessage());
+                }
+            });
     }
 
-    public static void hardSynchronization (String targetPath, String recoveryPath) throws Exception {
-        File recoverySrc = new File(recoveryPath);
-        if (!recoverySrc.exists())
-            throw new Exception("Source directory (" + recoveryPath + ") does not exist.");
-        File targetDirectory = new File(targetPath);
-        if (!targetDirectory.exists())
-            throw new Exception("Target directory (" + targetPath + ") does not exist.");
+    public static void hardSynchronization(String targetPath, String recoveryPath) throws IOException {
+        Path recoverySrc = Paths.get(recoveryPath);
+        if (!Files.exists(recoverySrc)) {
+            throw new IOException("Source directory (" + recoveryPath + ") does not exist.");
+        }
+        Path targetDirectory = Paths.get(targetPath);
+        if (!Files.exists(targetDirectory)) {
+            throw new IOException("Target directory (" + targetPath + ") does not exist.");
+        }
         deleteAll(targetDirectory);
         copyAll(targetDirectory, recoverySrc);
     }
 
+    public static void replaceFile(Path srcFile, Path srcDirectory, Path targetDirectory, boolean override) throws IOException {
+        Path relativePath = srcDirectory.relativize(srcFile);
+        Path targetFile = targetDirectory.resolve(relativePath);
     
-    public static void replaceFile (File srcFile, File srcDirectory, File targetDirectory, boolean override) throws FileNotFoundException, IOException {
-        URI srcFilePath = srcFile.toURI();
-        URI srcDirPath = srcDirectory.toURI();
-        String relativePath = srcDirPath.relativize(srcFilePath).getPath();
-
-        File targetFile = new File(targetDirectory.getPath() + "/" + relativePath);
-        if (targetFile.exists()) {    
-            //If the file already exists, we check if it is the same and if we are allowed to override it.
+        if (Files.exists(targetFile)) {
+            // If the file already exists, we check if it is the same and if we are allowed to override it.
             if (!override) {
-                if (!((srcFile.isFile() && targetFile.isFile()) || (srcFile.isDirectory() && targetFile.isDirectory()))) {
-                    System.out.println("allowed to override!");
-                    return;
-                }
-                if (srcFile.length() != targetFile.length()) {
-                    System.out.println("Not allowed to override!");
-                    return;
-                }
-                if (Files.mismatch(Path.of(srcFile.toURI()), Path.of(targetFile.toURI())) != -1) {
-                    System.out.println("Not allowed to override!");
+                try {
+                    if (!Files.isSameFile(srcFile, targetFile)) {
+                        System.out.println("Not allowed to override!");
+                        return;
+                    }
+                } catch (IOException e) {
+                    System.err.println("Failed to compare files: " + e.getMessage());
                     return;
                 }
             }
-            
-            //Start the replacement by erasing the old file
-            if (targetFile.isFile()) {
-                System.out.println("Replacing file: " + targetFile.getName());
-            }
-            else if (targetFile.isDirectory()) {
+    
+            // Start the replacement by erasing the old file
+            if (Files.isRegularFile(targetFile)) {
+                System.out.println("Replacing file: " + targetFile.getFileName());
+            } else if (Files.isDirectory(targetFile)) {
                 deleteAll(targetFile);
-                System.out.println("Replacing directory: " + targetFile.getName());
+                System.out.println("Replacing directory: " + targetFile.getFileName());
             }
-            targetFile.delete();
+            Files.delete(targetFile);
         }
-        //If the file doesn't exist or if we ovveride it, create a copy.
-        if (srcFile.isFile()) {
-            System.out.println("Copying file: " + srcFile.getName());
-            BufferedInputStream bInStream = new BufferedInputStream(new FileInputStream(srcFile));
-            byte[] data = new byte[(int) srcFile.length()];
-            bInStream.read(data);
-            bInStream.close();
-
-            targetFile.createNewFile();
-            BufferedOutputStream bOutStream = new BufferedOutputStream(new FileOutputStream(targetFile));
-            bOutStream.write(data);
-            bOutStream.close();
-        }
-        else if (srcFile.isDirectory()) {
-            System.out.println("Copying directory: " + srcFile.getName());
-            targetFile.mkdirs();
+    
+        // If the file doesn't exist or if we override it, create a copy.
+        if (Files.isRegularFile(srcFile)) {
+            System.out.println("Copying file: " + srcFile.getFileName());
+            Files.copy(srcFile, targetFile);
+        } else if (Files.isDirectory(srcFile)) {
+            System.out.println("Copying directory: " + srcFile.getFileName());
+            Files.createDirectories(targetFile);
             copyAll(targetFile, srcFile);
         }
     }
+    
 
     public static void watchEvents() {
         try {
             // Create a WatchService
             WatchService watchService = FileSystems.getDefault().newWatchService();
             // Register a directory for monitoring
-            Path directory = Paths.get("C:/Users");
-            directory.register(
+            
+            srcDirectory.register(
                 watchService, 
-                    StandardWatchEventKinds.ENTRY_CREATE,
-                        StandardWatchEventKinds.ENTRY_MODIFY, 
-                            StandardWatchEventKinds.ENTRY_DELETE);
+                StandardWatchEventKinds.ENTRY_CREATE,
+                StandardWatchEventKinds.ENTRY_MODIFY, 
+                StandardWatchEventKinds.ENTRY_DELETE);
 
             // Process events in a loop (continuously check for changes in the watched directory)
             while (true) {
@@ -154,16 +140,22 @@ public class DirectorySync {
 
                     WatchEvent<Path> ev = (WatchEvent<Path>) event;
                     Path filename = ev.context();
+                    Path filePath = targetDirectory.resolve(filename);
 
                     // Handle specific event types
-                    if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-                        //CODE POUR CREER UN FICHIER
+                    if (kind == StandardWatchEventKinds.ENTRY_CREATE) {   
+                        try {
+                            Files.createFile(filePath);
+                        } catch (IOException e) {
+                            //fenetre popup pour demander le remplacement avec comparaison des deux files
+                            replaceFile(filePath, srcDirectory, targetDirectory, false);
+                        }
+
                         System.out.format("File '%s' created.%n", filename);
                     } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                        //CODE POUR MODIFIER UN FICHIER
                         System.out.format("File '%s' modified.%n", filename);
                     } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-                        //CODE POUR SUPPRIMER UN FICHIER
+                        deleteFile(filePath);
                         System.out.format("File '%s' deleted.%n", filename);
                     }
                 }
