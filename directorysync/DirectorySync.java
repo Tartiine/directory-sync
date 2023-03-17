@@ -8,11 +8,14 @@
 package directorysync;
 
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.io.IOException;
 
 public class DirectorySync {
-
+    //Demander si on veut une synchro automatique ou non au lancement de l'application
     public static Path targetDirectory = Paths.get("C:/Users/sosob/OneDrive/Bureau/trgDir");
     public static Path srcDirectory = Paths.get("C:/Users/sosob/OneDrive/Bureau/srcDir");
 
@@ -30,12 +33,27 @@ public class DirectorySync {
             });
     }
 
-    public static void deleteFile(Path filename) {
+    public static void deleteFile(Path file) {
         try {
-            System.out.println("Deleting file: " + filename.getFileName());
-            Files.delete(filename);
+            System.out.println("Deleting file: " + file.getFileName());
+            Files.delete(file);
         } catch (IOException e) {
-            System.err.println("Failed to delete " + filename + ": " + e.getMessage());
+            System.err.println("Failed to delete " + file + ": " + e.getMessage());
+        }
+    }
+
+    public static void createFile(Path file, Path srcPath) throws IOException {
+        try {
+            System.out.println("Creating file: " + file.getFileName());
+            if (Files.isRegularFile(srcPath)) {
+                Files.createFile(file); 
+            } else if (Files.isDirectory(srcPath)) {
+                Files.createDirectory(file); 
+            }
+
+        } catch (IOException e) {
+            //fenetre popup pour demander le remplacement avec comparaison des deux files
+            replaceFile(file, srcDirectory, targetDirectory, false);
         }
     }
 
@@ -109,54 +127,94 @@ public class DirectorySync {
             copyAll(targetFile, srcFile);
         }
     }
-    
+
+
+
+
+      /**
+   * Register the given directory, and all its sub-directories, with the WatchService.
+   */
+  private static void walkAndRegisterDirectories(final Path start, WatchService ws, Map<WatchKey, Path> keys) throws IOException {
+    // register directory and sub-directories
+    Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
+      @Override
+      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+        WatchKey key = dir.register(ws, 
+        StandardWatchEventKinds.ENTRY_CREATE,
+        StandardWatchEventKinds.ENTRY_MODIFY, 
+        StandardWatchEventKinds.ENTRY_DELETE);
+        keys.put(key, dir);
+        return FileVisitResult.CONTINUE;
+      }
+    });
+  }
+
 
     public static void watchEvents() {
         try {
-            // Create a WatchService
-            WatchService watchService = FileSystems.getDefault().newWatchService();
-            // Register a directory for monitoring
-            
-            srcDirectory.register(
-                watchService, 
-                StandardWatchEventKinds.ENTRY_CREATE,
-                StandardWatchEventKinds.ENTRY_MODIFY, 
-                StandardWatchEventKinds.ENTRY_DELETE);
 
-            // Process events in a loop (continuously check for changes in the watched directory)
-            while (true) {
-                WatchKey key = watchService.take();
+            // Create a WatchService
+            Map<WatchKey, Path> keys = new HashMap<WatchKey, Path>();
+            WatchService watchService = FileSystems.getDefault().newWatchService();
+            
+            System.out.println("Watching directory: " + srcDirectory);
+
+
+            // Register a directory for monitoring
+            walkAndRegisterDirectories(srcDirectory, watchService, keys);
+
+
+            // Handle events on files and directories within the source directory
+            WatchKey key;
+            while ((key = watchService.take()) != null) {
+                Path dir = keys.get(key);
+                if (dir == null) {
+                  System.err.println("WatchKey not recognized!!");
+                  continue;
+                }
 
                 for (WatchEvent<?> event : key.pollEvents()) {
                     WatchEvent.Kind<?> kind = event.kind();
                     System.out.println(
                         "Event kind:" + event.kind() 
                           + ". File affected: " + event.context() + ".");
+                    Path filename = (Path) event.context();
+                    System.out.format("File : '%s'%n", filename);
+                    Path srcPath = dir.resolve(filename);
+                    System.out.format("srcPath : '%s'%n", srcPath);
+                    Path targetPath = targetDirectory.resolve(srcDirectory.relativize(srcPath));
+                    System.out.format("targetPath : '%s'%n", targetPath);
+            
+                    // Process events in a loop (continuously check for changes in the watched directory)
                     
                     if (kind == StandardWatchEventKinds.OVERFLOW) {
                         // Handle overflow events for later
                         continue;
                     }
 
-                    WatchEvent<Path> ev = (WatchEvent<Path>) event;
-                    Path filename = ev.context();
-                    Path filePath = targetDirectory.resolve(filename);
-
                     // Handle specific event types
                     if (kind == StandardWatchEventKinds.ENTRY_CREATE) {   
-                        try {
-                            Files.createFile(filePath);
-                        } catch (IOException e) {
-                            //fenetre popup pour demander le remplacement avec comparaison des deux files
-                            replaceFile(filePath, srcDirectory, targetDirectory, false);
-                        }
-
-                        System.out.format("File '%s' created.%n", filename);
+                        createFile(targetPath, srcPath);
+                        if (Files.isDirectory(srcPath)) {
+                            walkAndRegisterDirectories(srcPath, watchService, keys);
+                            System.out.format("Directory '%s' created.%n", filename);
+                        } else if (Files.isRegularFile(srcPath)) {
+                            System.out.format("File '%s' created.%n", filename);
+                        } 
                     } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                        System.out.format("File '%s' modified.%n", filename);
+                        if (Files.isRegularFile(srcPath)) {
+                            replaceFile(srcPath,srcDirectory,targetDirectory, true);
+                            System.out.format("File '%s' modified.%n", filename);
+                        }
+                        
                     } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-                        deleteFile(filePath);
-                        System.out.format("File '%s' deleted.%n", filename);
+                        if (Files.isDirectory(targetPath)) {
+                            deleteAll(targetPath);
+                            System.out.format("Directory '%s' deleted.%n", filename);
+                        } else if (Files.isRegularFile(targetPath)) {
+                            Files.delete(targetPath);
+                            System.out.format("File '%s' deleted.%n", filename);
+                        }
                     }
                 }
 
@@ -164,7 +222,12 @@ public class DirectorySync {
                 boolean valid = key.reset();
                 if (!valid) {
                     // Handle invalid WatchKey
-                    break;
+                    keys.remove(key);
+                    
+                    // all directories are inaccessible
+                    if (keys.isEmpty()) {
+                        break;
+                    }
                 }
             }
 
@@ -181,3 +244,4 @@ public class DirectorySync {
         watchEvents();
     }
 }
+
