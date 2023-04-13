@@ -16,8 +16,8 @@ import java.io.IOException;
 
 public class DirectorySync {
     //Demander si on veut une synchro automatique ou non au lancement de l'application
-    public static Path targetDirectory = Paths.get("C:/Users/sosob/OneDrive/Bureau/trgDir");
-    public static Path srcDirectory = Paths.get("C:/Users/sosob/OneDrive/Bureau/srcDir");
+    public static Path targetDirectory = Paths.get("./trgDir");
+    public static Path srcDirectory = Paths.get("./srcDir");
 
 
     public static void deleteAll(Path targetDirectory) throws IOException {
@@ -201,6 +201,7 @@ public class DirectorySync {
                         } else if (Files.isRegularFile(srcPath)) {
                             System.out.format("File '%s' created.%n", filename);
                         } 
+
                     } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
                         if (Files.isRegularFile(srcPath)) {
                             replaceFile(srcPath,srcDirectory,targetDirectory, true);
@@ -223,7 +224,6 @@ public class DirectorySync {
                 if (!valid) {
                     // Handle invalid WatchKey
                     keys.remove(key);
-                    
                     // all directories are inaccessible
                     if (keys.isEmpty()) {
                         break;
@@ -231,11 +231,8 @@ public class DirectorySync {
                 }
             }
 
-        } catch (IOException e) {
-            // Handle IO exceptions
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            // Handle interrupted exceptions
+        } catch (IOException | InterruptedException e) {
+            // Handle exceptions
             e.printStackTrace();
         }
     }
