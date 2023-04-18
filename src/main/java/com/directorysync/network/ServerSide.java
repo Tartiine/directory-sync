@@ -1,4 +1,4 @@
-package network;
+package com.directorysync.network;
 
 
 
@@ -33,7 +33,7 @@ public class ServerSide{
 		System.out.println("Size: " + FileSize + "Byte");
 		if(FileSize == file)System.out.println("File is verified");
 		else System.out.println("File is corrupted. File Received " + file + " Byte");
-		pr.println("File Recieved SUccessfully.");
+		pr.println("File Recieved Successfully.");
 		bos.close();
 		sock.close();
 	}

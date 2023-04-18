@@ -1,4 +1,4 @@
-package directorysync;
+package com.directorysync;
 
 import java.awt.*;
 import java.awt.event.*;

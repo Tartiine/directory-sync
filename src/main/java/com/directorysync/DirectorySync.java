@@ -5,7 +5,7 @@
 * Date   : 
 */
 
-package directorysync;
+package com.directorysync;
 
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;

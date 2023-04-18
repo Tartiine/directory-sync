@@ -1,0 +1,21 @@
+.root {
+    -fx-background-color: #333;
+    -fx-font-size: 10pt;
+}
+.label {
+    -fx-text-fill: #eee;
+    -fx-font-weight: bold;
+}
+.button {
+    -fx-background-color: #AB4642;
+    -fx-text-fill: #fff;
+    -fx-background-radius: 5;
+}
+
+.button-green {
+    -fx-background-color: #42ab42;
+}
+
+#italic-label {
+    -fx-font-style: italic;
+}
