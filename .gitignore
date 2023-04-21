@@ -23,3 +23,9 @@
 hs_err_pid*
 
 .fake
+trgDir/~$vvv.xlsx
+trgDir/truc
+trgDir/dkjf.bmp
+srcDir/truc
+srcDir/dkjf.bmp
+pom.xml

@@ -156,7 +156,8 @@ public class DirectorySync {
             // Create a WatchService
             Map<WatchKey, Path> keys = new HashMap<WatchKey, Path>();
             WatchService watchService = FileSystems.getDefault().newWatchService();
-            
+            //boolean isLocalExchange = true; // set to false if it is network exchange
+
             System.out.println("Watching directory: " + srcDirectory);
 
 
@@ -179,12 +180,15 @@ public class DirectorySync {
                         "Event kind:" + event.kind() 
                           + ". File affected: " + event.context() + ".");
                     Path filename = (Path) event.context();
-                    System.out.format("File : '%s'%n", filename);
+                    if (filename.toString().contains("~") || filename.toString().endsWith(".tmp")){
+                        continue; // Ignore the file
+                    }
+                    //System.out.format("File : '%s'%n", filename);
                     Path srcPath = dir.resolve(filename);
-                    System.out.format("srcPath : '%s'%n", srcPath);
+                    //System.out.format("srcPath : '%s'%n", srcPath);
                     Path targetPath = targetDirectory.resolve(srcDirectory.relativize(srcPath));
-                    System.out.format("targetPath : '%s'%n", targetPath);
-            
+                    //System.out.format("targetPath : '%s'%n", targetPath);
+                    
                     // Process events in a loop (continuously check for changes in the watched directory)
                     
                     if (kind == StandardWatchEventKinds.OVERFLOW) {
@@ -203,9 +207,16 @@ public class DirectorySync {
                         } 
 
                     } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                        if (Files.isRegularFile(srcPath)) {
-                            replaceFile(srcPath,srcDirectory,targetDirectory, true);
-                            System.out.format("File '%s' modified.%n", filename);
+                        //Amelioration : Ne pas remplacer le fichier mais juste ajouter les modifications ?
+                        while(true) {
+                            try {
+                                replaceFile(srcPath,srcDirectory,targetDirectory, true);
+                                System.out.format("File '%s' modified.%n", filename);
+                                break;
+                            } catch (IOException e) {
+                                // File is locked, wait for a bit and try again
+                                Thread.sleep(1000);
+                            }
                         }
                         
                     } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
