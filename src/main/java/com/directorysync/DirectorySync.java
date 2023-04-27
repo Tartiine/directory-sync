@@ -7,18 +7,22 @@
 
 package com.directorysync;
 
+import com.directorysync.network.ClientSide;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.IOException;
+
 
 public class DirectorySync {
     //Demander si on veut une synchro automatique ou non au lancement de l'application
     public static Path targetDirectory = Paths.get("./trgDir");
     public static Path srcDirectory = Paths.get("./srcDir");
-
+    public static WatchEvent.Kind<?> kind;
+    public static Path targetPath;
+    public static boolean isLocalExchange = false; // set to false if it is network exchange
 
     public static void deleteAll(Path targetDirectory) throws IOException {
         Files.walk(targetDirectory)
@@ -36,26 +40,41 @@ public class DirectorySync {
     public static void deleteFile(Path file) {
         try {
             System.out.println("Deleting file: " + file.getFileName());
-            Files.delete(file);
+            if (isLocalExchange) {
+                Files.delete(file);
+            } else {
+                ClientSide.events(kind, file);
+            }
+
         } catch (IOException e) {
             System.err.println("Failed to delete " + file + ": " + e.getMessage());
         }
     }
 
+
     public static void createFile(Path file, Path srcPath) throws IOException {
         try {
             System.out.println("Creating file: " + file.getFileName());
             if (Files.isRegularFile(srcPath)) {
-                Files.createFile(file); 
+                if (isLocalExchange) {
+                    Files.createFile(file);
+                } else {
+                    ClientSide.events(kind,file);
+                }
             } else if (Files.isDirectory(srcPath)) {
-                Files.createDirectory(file); 
+                if (isLocalExchange) {
+                    Files.createDirectory(file);
+                } else {
+                    ClientSide.events(kind,file);
+                }
             }
-
+    
         } catch (IOException e) {
             //fenetre popup pour demander le remplacement avec comparaison des deux files
             replaceFile(file, srcDirectory, targetDirectory, false);
         }
     }
+    
 
 
     public static void copyAll(Path targetDirectory, Path srcDirectory) throws IOException {
@@ -131,23 +150,23 @@ public class DirectorySync {
 
 
 
-      /**
+    /**
    * Register the given directory, and all its sub-directories, with the WatchService.
    */
-  private static void walkAndRegisterDirectories(final Path start, WatchService ws, Map<WatchKey, Path> keys) throws IOException {
-    // register directory and sub-directories
-    Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-        WatchKey key = dir.register(ws, 
-        StandardWatchEventKinds.ENTRY_CREATE,
-        StandardWatchEventKinds.ENTRY_MODIFY, 
-        StandardWatchEventKinds.ENTRY_DELETE);
-        keys.put(key, dir);
-        return FileVisitResult.CONTINUE;
-      }
-    });
-  }
+    private static void walkAndRegisterDirectories(final Path start, WatchService ws, Map<WatchKey, Path> keys) throws IOException {
+        // register directory and sub-directories
+        Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            WatchKey key = dir.register(ws, 
+            StandardWatchEventKinds.ENTRY_CREATE,
+            StandardWatchEventKinds.ENTRY_MODIFY, 
+            StandardWatchEventKinds.ENTRY_DELETE);
+            keys.put(key, dir);
+            return FileVisitResult.CONTINUE;
+        }
+        });
+    }
 
 
     public static void watchEvents() {
@@ -156,7 +175,7 @@ public class DirectorySync {
             // Create a WatchService
             Map<WatchKey, Path> keys = new HashMap<WatchKey, Path>();
             WatchService watchService = FileSystems.getDefault().newWatchService();
-            //boolean isLocalExchange = true; // set to false if it is network exchange
+            
 
             System.out.println("Watching directory: " + srcDirectory);
 
@@ -175,20 +194,22 @@ public class DirectorySync {
                 }
 
                 for (WatchEvent<?> event : key.pollEvents()) {
-                    WatchEvent.Kind<?> kind = event.kind();
+                    kind = event.kind();
                     System.out.println(
-                        "Event kind:" + event.kind() 
+                        "Event kind:" + kind 
                           + ". File affected: " + event.context() + ".");
                     Path filename = (Path) event.context();
+
                     if (filename.toString().contains("~") || filename.toString().endsWith(".tmp")){
                         continue; // Ignore the file
                     }
                     //System.out.format("File : '%s'%n", filename);
                     Path srcPath = dir.resolve(filename);
                     //System.out.format("srcPath : '%s'%n", srcPath);
-                    Path targetPath = targetDirectory.resolve(srcDirectory.relativize(srcPath));
+                    Path targetPath = targetDirectory.resolve(filename);
                     //System.out.format("targetPath : '%s'%n", targetPath);
                     
+
                     // Process events in a loop (continuously check for changes in the watched directory)
                     
                     if (kind == StandardWatchEventKinds.OVERFLOW) {
@@ -207,14 +228,18 @@ public class DirectorySync {
                         } 
 
                     } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                        //Amelioration : Ne pas remplacer le fichier mais juste ajouter les modifications ?
+                        // Amelioration : Ne pas remplacer le fichier mais juste ajouter les modifications ?
                         while(true) {
                             try {
-                                replaceFile(srcPath,srcDirectory,targetDirectory, true);
+                                if (isLocalExchange) {
+                                    replaceFile(srcPath,srcDirectory,targetDirectory, true);
+                                } else {
+                                    ClientSide.events(kind, targetPath);
+                                }
                                 System.out.format("File '%s' modified.%n", filename);
                                 break;
                             } catch (IOException e) {
-                                // File is locked, wait for a bit and try again
+                                // File is locked, wait for a 1s and try again
                                 Thread.sleep(1000);
                             }
                         }
@@ -223,8 +248,12 @@ public class DirectorySync {
                         if (Files.isDirectory(targetPath)) {
                             deleteAll(targetPath);
                             System.out.format("Directory '%s' deleted.%n", filename);
-                        } else if (Files.isRegularFile(targetPath)) {
-                            Files.delete(targetPath);
+                        } else {
+                            if (isLocalExchange) {
+                                Files.delete(targetPath);
+                            } else {
+                                ClientSide.events(kind, targetPath);
+                            }
                             System.out.format("File '%s' deleted.%n", filename);
                         }
                     }

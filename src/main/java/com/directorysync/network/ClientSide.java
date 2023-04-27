@@ -1,56 +1,62 @@
 package com.directorysync.network;
-
-
-
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.Scanner;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.WatchEvent.Kind;
 
 
 public class ClientSide{
-    @SuppressWarnings("resource")
-	public static void main(String[] args) throws UnknownHostException, IOException {
-		Socket sock = new Socket("localhost", 3456);
-		String FileName = "srcDir/truc";
-		File MyFile = new File(FileName);
-		int FileSize = (int) MyFile.length();
-		OutputStream os =sock.getOutputStream();
-		PrintWriter pr = new PrintWriter(sock.getOutputStream(), true);
-		BufferedInputStream bis = new BufferedInputStream(new FileInputStream(MyFile));
-		Scanner in = new Scanner(sock.getInputStream());
-		
-		pr.println(FileName);
-		pr.println(FileSize);
-		byte[] filebyte = new byte[FileSize];
-		bis.read(filebyte, 0, filebyte.length);
-		os.write(filebyte, 0, filebyte.length);
-		System.out.println(in.nextLine());
-		os.flush();
-		sock.close();
+
+	static String address = "192.168.1.254";
+	public static Path dir = Paths.get("./trgDir");
+
+    public static void main(String[] args) throws IOException {
+
+		try (Socket socket = new Socket(address, 3456)) {
+			dirExist(dir);
+			socket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+            while (true) {
+				
+                // Keep the client-side code running until the program is closed
+            }
+
+    }
+
+	public static void sendMessage(String message) throws IOException {
+		try (Socket socket = new Socket(address, 3456)) {
+			System.out.println("Sending message: " + message);
+	
+			OutputStream outputStream = socket.getOutputStream();
+			outputStream.write(message.getBytes());
+			outputStream.flush();
+			socket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
-    /*
+	public static void events(Kind<?> kind, Path file) throws IOException {
+		String message = kind.toString() + " " + file.toString(); 
+		sendMessage(message);
+	}
 
-    public static void main(String[] args) {
-        
-        System.out.println("Client started");
-        try {
-            Socket soc = new Socket("localhost",49100);
-            BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("Enter text:");
-            String str = userInput.readLine();
-            PrintWriter out = new PrintWriter(soc.getOutputStream(), true);
-            out.println(str);
-            BufferedReader in = new BufferedReader(new InputStreamReader(soc.getInputStream()));
-            System.out.println(in.readLine());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    } */
+	public static void dirExist(Path file) throws IOException {
+		boolean exists = Files.exists(file);
+		if (exists) {
+			System.out.println("Path exists!");
+		} else {
+			System.out.println("Path does not exist.");
+		}
+	}
+
+
 }
+
+
