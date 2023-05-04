@@ -18,7 +18,7 @@ public class AlertBox {
 
         Label label = new Label();
         label.setText(message);
-        Button closeButton = new Button("Close the window");
+        Button closeButton = new Button("Close");
         closeButton.setOnAction(e -> window.close());
 
         VBox layout = new VBox(10);
@@ -27,6 +27,7 @@ public class AlertBox {
         layout.setPadding(new Insets(10));
 
         Scene scene = new Scene(layout);
+        scene.getStylesheets().add("styleForm.css");
         window.setScene(scene);
         window.showAndWait();
     }

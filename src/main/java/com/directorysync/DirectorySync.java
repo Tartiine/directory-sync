@@ -13,8 +13,13 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
+import com.directorysync.gui.ConfirmBox;
+
+import java.io.IOException;
 
 public class DirectorySync {
     //Demander si on veut une synchro automatique ou non au lancement de l'application
@@ -23,6 +28,7 @@ public class DirectorySync {
     public static WatchEvent.Kind<?> kind;
     public static Path targetPath;
     public static boolean isLocalExchange = false; // set to false if it is network exchange
+    public static List<Directory> directories;
 
     public static void deleteAll(Path targetDirectory) throws IOException {
         Files.walk(targetDirectory)
@@ -68,7 +74,6 @@ public class DirectorySync {
                     ClientSide.events(kind,file);
                 }
             }
-    
         } catch (IOException e) {
             //fenetre popup pour demander le remplacement avec comparaison des deux files
             replaceFile(file, srcDirectory, targetDirectory, false);
@@ -95,17 +100,69 @@ public class DirectorySync {
             });
     }
 
-    public static void hardSynchronization(String targetPath, String recoveryPath) throws IOException {
-        Path recoverySrc = Paths.get(recoveryPath);
-        if (!Files.exists(recoverySrc)) {
-            throw new IOException("Source directory (" + recoveryPath + ") does not exist.");
+    public static void hardSynchronization(List<Path> targetPaths, Path recoveryPath, Boolean warning) throws IOException {
+        switch (getFolderValidity(recoveryPath.toString())) {
+            case 0: throw new IOException("Please enter a source directory.");
+            case 2: throw new IOException("Source directory (" + recoveryPath + ") does not exist.");
+            case 3: throw new IOException("Unable to write or read in source directory (" + recoveryPath + ").");
         }
-        Path targetDirectory = Paths.get(targetPath);
-        if (!Files.exists(targetDirectory)) {
-            throw new IOException("Target directory (" + targetPath + ") does not exist.");
+        for (Path path : targetPaths) {
+            switch (getFolderValidity(path.toString())) {
+                case 0: throw new IOException("Please enter a target directory.");
+                case 2: throw new IOException("Target directory (" + path + ") does not exist.");
+                case 3: throw new IOException("Unable to write or read in target directory (" + path + ").");
+            }
+            if (checkFolderInclusion(path, recoveryPath, true)) throw new IOException("Source and target directories should not contain each other.");
         }
-        deleteAll(targetDirectory);
-        copyAll(targetDirectory, recoverySrc);
+        if (warning) {
+            Boolean answer = ConfirmBox.display("Warning", "Warning: the content of all target directories will be erased. Continue?");
+            if (!answer) {
+                System.out.println("Synchronization cancelled");
+                return;
+            }
+        }
+        for (Path path : targetPaths) {
+            System.out.println("deleteAll(" + path + ")");
+            System.out.println("copyAll(" + path + ", " + recoveryPath + ")");
+        }
+    }
+
+    /**
+     * Tests a path that supposedly point towards a directory
+     * @param path The path to check
+     * @return 0 if{@code path}is empty
+     * <li>1 if{@code path}is valid</li>
+     * <li>2 if{@code path}is invalid or doesn't point to a directory</li>
+     * <li>3 if{@code path}is valid but doesn't allow for reading or writing</li>
+     */
+    public static int getFolderValidity(String path) {
+        if (path.trim().isEmpty())
+            return 0;
+        Path dirPath = Path.of(path);
+        if (!Files.isDirectory(dirPath))
+            return 2;
+        else if (!Files.isReadable(dirPath) || !Files.isWritable(dirPath))
+            return 3;
+        else
+            return 1;
+    }
+
+    /**
+     * Returns true if the first folder contains the second folder and vice versa
+    */
+    public static boolean checkFolderInclusion(Path firstPath, Path secondPath, boolean twoWayCheck) {
+        try {
+            Path relativePath = firstPath.relativize(secondPath);
+            System.out.println(relativePath);
+            if (relativePath.toString().contains("..")) {
+                if (twoWayCheck) return checkFolderInclusion(secondPath, firstPath, false);
+                else return false;
+            }
+            else return true;
+        } catch (Exception e1) {
+            if (twoWayCheck) return checkFolderInclusion(secondPath, firstPath, false);
+            else return false;
+        }
     }
 
     public static void replaceFile(Path srcFile, Path srcDirectory, Path targetDirectory, boolean override) throws IOException {
@@ -147,26 +204,71 @@ public class DirectorySync {
         }
     }
 
+    /**
+     * Initialize the synchronization between folders by copying missing files.
+     * In case of a conflict, the user is asked which file to keep.
+     * Otherwise, and contrary to the hard synchronization, no files are deleted.
+    */
+    public static void softSynchronization (List<Path> directoryPaths) throws IOException {
+        List<Conflict> conflicts = new LinkedList<Conflict>();
+        try {
+            for (Path dirPath : directoryPaths) {
+                Files.walk(dirPath).forEach(path -> {
+                    if (!Files.isRegularFile(path)) return;
+                    Path relPath = dirPath.relativize(path);
+                    
+                    if (conflicts.contains(new Conflict(relPath))) return;
+                    
+                    Conflict conflict = new Conflict(relPath, directoryPaths);
+                    for (int i = 0 ; i < directoryPaths.size() ; i++) {
+                        if (Files.exists(directoryPaths.get(i).resolve(relPath)))
+                            conflict.addConflictFile(i);
+                    }
+                    conflicts.add(conflict);
+                    System.out.println("Test conflict:" + relPath.toString());
+                });
+            }
+
+            for (Conflict conflict : conflicts) {
+                if (conflict.getConcernedFilesLength() == 1) {
+                    try { conflict.resolve(conflict.getLatestFile()); }
+                    catch (Exception e) { System.err.println(e.getStackTrace()); }
+                } else if (conflict.getConcernedFilesLength() > 1) {
+                    // If 2 or more directories have a file with the same name, ask which one to keep
+                    if (ConfirmBox.display("Conflict", "Do you want to keep the first file?")) {
+                        try { conflict.resolve(conflict.getTargetFileIndex(0)); }
+                        catch (Exception e) { System.err.println(e.getStackTrace()); }
+                    } else {
+                        try { conflict.resolve(conflict.getTargetFileIndex(1)); }
+                        catch (Exception e) { System.err.println(e.getStackTrace()); }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println(e.getStackTrace());
+        }
+    }
+
 
 
 
     /**
-   * Register the given directory, and all its sub-directories, with the WatchService.
-   */
-    private static void walkAndRegisterDirectories(final Path start, WatchService ws, Map<WatchKey, Path> keys) throws IOException {
-        // register directory and sub-directories
-        Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
-        @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-            WatchKey key = dir.register(ws, 
-            StandardWatchEventKinds.ENTRY_CREATE,
-            StandardWatchEventKinds.ENTRY_MODIFY, 
-            StandardWatchEventKinds.ENTRY_DELETE);
-            keys.put(key, dir);
-            return FileVisitResult.CONTINUE;
-        }
-        });
-    }
+    * Register the given directory, and all its sub-directories, with the WatchService.
+    */
+  private static void walkAndRegisterDirectories(final Path start, WatchService ws, Map<WatchKey, Path> keys) throws IOException {
+    // register directory and sub-directories
+    Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
+      @Override
+      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+        WatchKey key = dir.register(ws, 
+        StandardWatchEventKinds.ENTRY_CREATE,
+        StandardWatchEventKinds.ENTRY_MODIFY, 
+        StandardWatchEventKinds.ENTRY_DELETE);
+        keys.put(key, dir);
+        return FileVisitResult.CONTINUE;
+      }
+    });
+  }
 
 
     public static void watchEvents() {

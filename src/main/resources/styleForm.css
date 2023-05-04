@@ -1,15 +1,31 @@
+@font-face {
+    src: url("fonts/SciFly.ttf");
+}
+
 .root {
-    -fx-background-color: #333;
-    -fx-font-size: 10pt;
+    -fx-background-color: #3f435c;
+    -fx-font-size: 12pt;
+    -fx-font-family: "SciFly";
 }
 .label {
     -fx-text-fill: #eee;
-    -fx-font-weight: bold;
+    -fx-font-weight: bolder;
+    -fx-font-size: 12pt;
 }
+
+.titleLabel {
+    -fx-font-size: 14pt;
+}
+
 .button {
-    -fx-background-color: #AB4642;
-    -fx-text-fill: #fff;
+    -fx-background-color: #91b8ce;
+    -fx-text-fill: #333;
     -fx-background-radius: 5;
+    -fx-padding: 5 9;
+}
+
+.icon-button {
+    -fx-padding: 8 8;
 }
 
 .button-green {
@@ -18,4 +34,15 @@
 
 #italic-label {
     -fx-font-style: italic;
+}
+
+#folderTextField {
+    -fx-border-style: solid;
+    -fx-background-radius: 6.5;
+    -fx-border-radius: 5;
+    -fx-border-width: 2.5;
+    -fx-focus-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-color: #ccc;
+    -fx-prompt-text-fill: #999;
 }
