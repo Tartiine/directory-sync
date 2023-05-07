@@ -14,8 +14,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.SelectionMode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -24,7 +22,8 @@ import javafx.stage.Stage;
 public class Main extends Application {
 
     private Stage window;
-    private Scene sceneHome, scene2, sceneForm;
+    private Scene sceneHome;
+    List<Directory> directories;
 
     public static void main(String[] args) {
         launch(args);
@@ -37,50 +36,16 @@ public class Main extends Application {
         window.setResizable(false);
         window.setTitle("Directory synchronization");
 
-        List<Directory> directories = new LinkedList<>();
+        directories = new LinkedList<>();
         directories.add(new Directory("Directory 1", Path.of("testPath"), "ip"));
         directories.add(new Directory("Test 2", Path.of("test2")));
         directories.add(new Directory("The third one", Path.of("test3")));
 
-        HBox topMenu = new HBox();
-        /*Button buttonMenuA = new Button("File");
-        Button buttonMenuB = new Button("Edit");
-        Button buttonMenuC = new Button("View");
-        topMenu.getChildren().addAll(buttonMenuA, buttonMenuB, buttonMenuC);*/
-
         Label titleLabel = new Label("Select folders to synchronize");
         titleLabel.getStyleClass().add("titleLabel");
-        titleLabel.setPadding(new Insets(0, 0, 10, 0));
-
-        VBox folderSelection = new VBox(10);
-
-        DirChooserElement firstDirChooser = new DirChooserElement();
-        HBox firstFolder = firstDirChooser.dirChooserButtonWithField(
-            500,
-            "First folder path",
-            10,
-            "Select a folder to synchronize",
-            primaryStage
-        );
-        firstDirChooser.getTextField().setId("folderTextField");
-
-        DirChooserElement secondDirChooser = new DirChooserElement();
-        HBox secondFolder = secondDirChooser.dirChooserButtonWithField(
-            500,
-            "Second folder path",
-            10,
-            "Select a folder to synchronize",
-            primaryStage
-        );
-        secondDirChooser.getTextField().setId("folderTextField");
-
-        folderSelection.getChildren().addAll(
-            firstFolder,
-            secondFolder
-        );
 
         Button hardSyncButton = new Button("Hard synchronization");
-        hardSyncButton.setOnAction(e -> {
+        /*hardSyncButton.setOnAction(e -> {
             try {
                 List<Path> targetPaths = new LinkedList<Path>();
                 targetPaths.add(Path.of(secondDirChooser.getTextField().getText()));
@@ -92,10 +57,10 @@ public class Main extends Application {
             } catch (IOException exception) {
                 AlertBox.display("Error", exception.getMessage());
             }
-        });
+        });*/
 
         Button softSyncButton = new Button("Soft synchronization");
-        softSyncButton.setOnAction(e -> {
+        /*softSyncButton.setOnAction(e -> {
             try {
                 List<Path> targetPaths = new LinkedList<Path>();
                 targetPaths.add(Path.of(firstDirChooser.getTextField().getText()));
@@ -104,44 +69,51 @@ public class Main extends Application {
             } catch (IOException exception) {
                 AlertBox.display("Error", exception.getMessage());
             }
-        });
+        });*/
 
         HBox actionButtons = new HBox(10);
         actionButtons.getChildren().addAll(hardSyncButton, softSyncButton);
-
-        VBox layout1 = new VBox(10);
-        layout1.getChildren().addAll(titleLabel, folderSelection, actionButtons);
-        layout1.setAlignment(Pos.CENTER);
-        layout1.setPadding(new Insets(20));
         
-        /*VBox dirsLayout = new VBox(10);
-        for (Directory dir : directories) {
-            Button btn = new Button(dir.getName());
-            btn.setOnAction(e -> {
-                AlertBox.display(
-                    "Infos about '"+dir.getName()+"'",
-                    dir.getPath() +"\n" + dir.isLocal().toString() + "\n" + dir.getIpAddress());
-            });
-            dirsLayout.getChildren().add(btn);
-        }*/
+        VBox dirsLayout = new VBox(10);
+        dirsLayout.setAlignment(Pos.TOP_CENTER);
+        refreshDirsList(dirsLayout);
 
-        BorderPane borderPane = new BorderPane();
-        borderPane.setTop(topMenu);
-        borderPane.setCenter(layout1);
-        //borderPane.setBottom(dirsLayout);
+        VBox mainLayout = new VBox(30);
+        mainLayout.getChildren().addAll(titleLabel, dirsLayout, actionButtons);
+        mainLayout.setAlignment(Pos.CENTER);
+        mainLayout.setPadding(new Insets(20));
         
-        sceneHome = new Scene(borderPane);
+        sceneHome = new Scene(mainLayout);
         sceneHome.getStylesheets().add("styleForm.css");
 
         window.setScene(sceneHome);
         window.show();
     }
 
+    private void refreshDirsList (VBox dirsLayout) {
+        dirsLayout.getChildren().clear();
+        for (int i = 0; i < directories.size(); i++) {
+            final int currentIndex = i;
+            Button btn = new Button(directories.get(i).getName());
+            btn.setMinWidth(250);
+            btn.setMaxWidth(250);
+            btn.setOnAction(e -> {
+                directories.set(currentIndex, DirConfigGUI.display(directories.get(currentIndex)));
+                if (directories.get(currentIndex).getName() == "%%/Remove/%%")
+                    directories.remove(currentIndex);
+                refreshDirsList(dirsLayout);
+            });
+            dirsLayout.getChildren().add(btn);
+        }
+        window.sizeToScene();
+    }
+
     private void closeProgram() {
-        //Boolean answer = ConfirmBox.display("Confirmation", "Are you sure you want to close the program?");
-        //if (answer) {
+        //if (communication is active)
+        Boolean answer = ConfirmBox.display("Confirmation", "By exiting the program, the synchronization will end.\nAre you sure you want to exit the program?");
+        if (answer) {
             System.out.println("Program closed");
             window.close();
-        //}
+        }
     }
 }

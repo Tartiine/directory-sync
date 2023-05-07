@@ -38,6 +38,9 @@ public class Directory {
     public Boolean isLocal() {
         return this.local;
     }
+    public void setLocal(Boolean b) {
+        this.local = b;
+    }
 
     public String getIpAddress() {
         return this.ipAddress;

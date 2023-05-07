@@ -13,6 +13,10 @@
     -fx-font-size: 12pt;
 }
 
+.white_text {
+    -fx-text-fill: #eee;
+}
+
 .titleLabel {
     -fx-font-size: 14pt;
 }
