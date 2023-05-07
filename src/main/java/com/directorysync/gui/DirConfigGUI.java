@@ -58,7 +58,7 @@ public class DirConfigGUI {
         localCheckBox.getStyleClass().add("white_text");
         localCheckBox.setSelected(dir.isLocal());
         localCheckBox.selectedProperty().addListener((obs, oldValue, newValue) -> {
-            dir.setLocal(newValue);
+            //dir.setLocal(newValue);
         });
 
         VBox ipFieldBox = new VBox(4);
