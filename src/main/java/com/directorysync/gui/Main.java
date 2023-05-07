@@ -37,6 +37,9 @@ public class Main extends Application {
 
         directoryList = new LinkedList<>();
 
+        directoryList.add(new Directory("folder 1", Path.of("/home/isaac/Bureau/folder 1")));
+        directoryList.add(new Directory("folder 2", Path.of("/home/isaac/Bureau/folder 2")));
+
         Label titleLabel = new Label("Select folders to synchronize");
         titleLabel.getStyleClass().add("titleLabel");
 
@@ -74,6 +77,7 @@ public class Main extends Application {
                 } catch (IOException exception) {
                     AlertBox.display("Error", exception.getMessage());
                 }
+                DirectorySync.watchEvents();
             } else if (syncType == 1) {
                 //Soft synchronization
                 try {
@@ -84,6 +88,7 @@ public class Main extends Application {
                 } catch (IOException exception) {
                     AlertBox.display("Error", exception.getMessage());
                 }
+                DirectorySync.watchEvents();
             }
         });
 
