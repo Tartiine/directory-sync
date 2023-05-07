@@ -32,10 +32,8 @@ public class ServerSide{
 				try (BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
 					String message = reader.readLine();
 					processMessage(message);
+					
 				}
-
-	
-	
 				// Close the socket
 				clientSocket.close();
 			}
@@ -66,9 +64,15 @@ public class ServerSide{
 			}
 		} else if (kind.equals("ENTRY_MODIFY")){
 			// Handle modify event
+		} else if (kind.equals("checking")){
+			boolean exists = Files.exists(Paths.get(file));
+			if (exists) {
+				System.out.println("Path exists!");
+			} else {
+				System.out.println("Path does not exist.");
+			}	
 		}
 	}
-	
 
 }
 
