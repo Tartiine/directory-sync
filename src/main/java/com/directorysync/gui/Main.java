@@ -37,9 +37,6 @@ public class Main extends Application {
 
         directoryList = new LinkedList<>();
 
-        directoryList.add(new Directory("folder 1", Path.of("/home/isaac/Bureau/folder 1")));
-        directoryList.add(new Directory("folder 2", Path.of("/home/isaac/Bureau/folder 2")));
-
         Label titleLabel = new Label("Select folders to synchronize");
         titleLabel.getStyleClass().add("titleLabel");
 
@@ -63,6 +60,10 @@ public class Main extends Application {
                 AlertBox.display("Not enough directories", "Please select at least two directories to synchronize.");
                 return;
             }
+            if (DirectorySync.checkMultipleInclusion()) {
+                AlertBox.display("Error", "Folders should not contain each other.");
+                return;
+            }
             int syncType = SyncTypePopup.display();
 
             if (syncType == 0) {
@@ -71,8 +72,13 @@ public class Main extends Application {
                     List<Path> targetPaths = new LinkedList<Path>();
                     for(Directory dir:directoryList)
                         targetPaths.add(dir.getPath());
-                    Path srcPath = targetPaths.get(0);
-                    targetPaths.remove(0);
+                    int dirIndex = DirSelectGUI.display(
+                        "Choose a source folder",
+                        "Select the directory that will serve as the source",
+                        directoryList);
+                    if (dirIndex < 0) return;
+                    Path srcPath = targetPaths.get(dirIndex);
+                    targetPaths.remove(dirIndex);
                     DirectorySync.hardSynchronization(targetPaths, srcPath, true);
                 } catch (IOException exception) {
                     AlertBox.display("Error", exception.getMessage());

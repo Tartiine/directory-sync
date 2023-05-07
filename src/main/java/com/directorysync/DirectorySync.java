@@ -18,6 +18,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import com.directorysync.gui.ConfirmBox;
+import com.directorysync.gui.DirSelectGUI;
 import com.directorysync.gui.Main;
 
 
@@ -150,7 +151,6 @@ public class DirectorySync {
                 case 2: throw new IOException("Target directory (" + path + ") does not exist.");
                 case 3: throw new IOException("Unable to write or read in target directory (" + path + ").");
             }
-            if (checkFolderInclusion(path, recoveryPath, true)) throw new IOException("Source and target directories should not contain each other.");
         }
         if (warning) {
             Boolean answer = ConfirmBox.display("Warning", "Warning: the content of all target directories will be erased. Continue?");
@@ -188,6 +188,19 @@ public class DirectorySync {
     /**
      * Returns true if the first folder contains the second folder and vice versa
     */
+    public static boolean checkMultipleInclusion() {
+        for (int i = 0; i < Main.directoryList.size(); i++) {
+            for (int j = i + 1; j < Main.directoryList.size(); j++) {
+                if (checkFolderInclusion(
+                    Main.directoryList.get(i).getPath(),
+                    Main.directoryList.get(j).getPath(), true)
+                )
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean checkFolderInclusion(Path firstPath, Path secondPath, boolean twoWayCheck) {
         try {
             Path relativePath = firstPath.relativize(secondPath);
@@ -300,13 +313,18 @@ public class DirectorySync {
                     catch (Exception e) { System.err.println(e.getStackTrace()); }
                 } else if (conflict.getConcernedFilesLength() > 1) {
                     // If 2 or more directories have a file with the same name, ask which one to keep
-                    if (ConfirmBox.display("Conflict", "Do you want to keep the first file?")) {
-                        try { conflict.resolve(conflict.getTargetFileIndex(0)); }
-                        catch (Exception e) { System.err.println(e.getStackTrace()); }
-                    } else {
-                        try { conflict.resolve(conflict.getTargetFileIndex(1)); }
-                        catch (Exception e) { System.err.println(e.getStackTrace()); }
+                    List<Directory> temp = new LinkedList<Directory>();
+                    for(int i = 0; i < conflict.getConcernedFilesLength(); i++) {
+                        Path p = conflict.getConcernedPath(i);
+                        temp.add(new Directory(p.toString(), p));
                     }
+                    int dirIndex = DirSelectGUI.display(
+                        "Solve conflict",
+                        "There is a conflict about file: " + conflict.getRelativeFilePath().toString()+ "\nSelect the version you want to keep.",
+                        temp);
+                    
+                    try { conflict.resolve(conflict.getTargetFileIndex(dirIndex)); }
+                    catch (Exception e) { System.err.println(e.getStackTrace()); }
                 }
             }
         } catch (Exception e) {
