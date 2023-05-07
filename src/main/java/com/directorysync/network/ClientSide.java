@@ -19,13 +19,16 @@ public class ClientSide{
 	public static Path dir = Paths.get("./trgDir");
 
     public static void main(String[] args) throws IOException {
-
 		dirExist(dir);
 		while (true) {	
 		}
-
     }
 
+	/**
+	 * @brief Sends a message to the server.
+	 * @param message The message to send.
+	 * @throws IOException if an I/O error occurs.
+	 */
 	public static void sendMessage(String message) throws IOException {
 		try (Socket socket = new Socket(address, 3456)) {
 			System.out.println("Sending message: " + message);
@@ -39,6 +42,12 @@ public class ClientSide{
 		}
 	}
 
+	/**
+	 * @brief Sends the details of a file event to the server.
+	 * @param kind The type of file event.
+	 * @param file The path of the file that triggered the event or the target path.
+	 * @throws IOException if an I/O error occurs.
+	 */
 	public static void events(String kind, Path file) throws IOException {
 		String message = kind + " " + file.toString(); 
 		sendMessage(message);
@@ -47,6 +56,11 @@ public class ClientSide{
 		}
 	}
 
+	/**
+	 * @brief Sends a file to the server.
+	 * @param filePath The path of the file to send.
+	 * @throws IOException if an I/O error occurs.
+	 */
 	private static void sendFile(Path filePath) {
 		try (Socket socket = new Socket(address, 3456)) {
 			OutputStream outputStream = socket.getOutputStream();
@@ -76,7 +90,12 @@ public class ClientSide{
 			e.printStackTrace();
 		}
 	}
-	
+
+	/**
+	 * @brief Checks if a directory exists on the server.
+	 * @param file The path of the directory to check.
+	 * @throws IOException if an I/O error occurs.
+	 */
 	public static void dirExist(Path file) throws IOException {
 		try (Socket socket = new Socket(address, 3456)) {
 			String message = "checking" + " " + file.toString();

@@ -1,3 +1,8 @@
+/** 
+* Class name  : Directory
+* Description   : Represents a directory to be synchronized
+* @author Isaac Dalberto, Sofia Saadi
+*/
 package com.directorysync;
 
 import java.nio.file.Path;
@@ -8,12 +13,24 @@ public class Directory {
     private boolean local;
     private String ipAddress;
 
+    /**
+     * @brief Constructor for a local directory
+     * @param name Name of the directory
+     * @param path Path to the directory
+     */
     public Directory (String name, Path path) {
         this.name = name;
         this.path = path;
         this.local = true;
     }
 
+    
+    /**
+     * @brief Constructor for a remote directory
+     * @param name Name of the directory
+     * @param path Path to the directory
+     * @param ipAddress IP address of the remote directory
+     */
     public Directory (String name, Path path, String ipAddress) {
         this.name = name;
         this.path = path;

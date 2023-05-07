@@ -2,7 +2,7 @@
 * Class name  : DirectorySync
 * Description   : Directory synchronization project
 * @author Isaac Dalberto, Sofia Saadi
-* Date   : 
+* Date  : May 2023
 */
 
 package com.directorysync;
