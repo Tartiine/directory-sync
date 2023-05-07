@@ -37,6 +37,7 @@ public class ConfirmBox {
         layout.setAlignment(Pos.CENTER);
         layout.setPadding(new Insets(10)); 
         Scene scene = new Scene(layout);
+        scene.getStylesheets().add("styleForm.css");
         window.setScene(scene);
         window.showAndWait();
 
