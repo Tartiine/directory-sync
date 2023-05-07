@@ -15,6 +15,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -22,6 +23,7 @@ public class Main extends Application {
 
     private Stage window;
     private Scene sceneHome;
+    private Scene sceneSynchronized;
     public static List<Directory> directoryList;
 
     public static void main(String[] args) {
@@ -94,12 +96,12 @@ public class Main extends Application {
                 } catch (IOException exception) {
                     AlertBox.display("Error", exception.getMessage());
                 }
+                window.setScene(sceneSynchronized);
                 DirectorySync.watchEvents();
             }
         });
 
         HBox actionButtons = new HBox(10);
-        //actionButtons.getChildren().addAll(hardSyncButton, softSyncButton);
         actionButtons.getChildren().addAll(addButton, startSyncButton);
 
         VBox mainLayout = new VBox(30);
@@ -109,6 +111,15 @@ public class Main extends Application {
         
         sceneHome = new Scene(mainLayout);
         sceneHome.getStylesheets().add("styleForm.css");
+
+        
+        //Interface while the folder are being synchronized
+        Label syncTitleLabel = new Label("The directories are synchronized. Please close the program when you want to stop the synchronization.");
+        syncTitleLabel.getStyleClass().add("titleLabel");
+        syncTitleLabel.setWrapText(true);
+        StackPane syncLayout = new StackPane();
+        syncLayout.getChildren().add(syncTitleLabel);
+        sceneSynchronized = new Scene(syncLayout, 400, 300);
 
         window.setScene(sceneHome);
         window.show();
