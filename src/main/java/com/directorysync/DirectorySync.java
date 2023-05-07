@@ -160,8 +160,8 @@ public class DirectorySync {
             }
         }
         for (Path path : targetPaths) {
-            System.out.println("deleteAll(" + path + ")");
-            System.out.println("copyAll(" + path + ", " + recoveryPath + ")");
+            deleteAll(path);
+            copyAll(path, recoveryPath);
         }
     }
 
