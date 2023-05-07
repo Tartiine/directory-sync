@@ -11,33 +11,32 @@ import com.directorysync.network.ClientSide;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import com.directorysync.gui.ConfirmBox;
+import com.directorysync.gui.Main;
+
 
 /**
  * @class DirectorySync
  * @brief A class to synchronize directories
  * @details This class contains methods to compare directories and synchronize them by copying, deleting, or modifying files as required.
  * @note This class assumes that the directories are on the same system unless specified otherwise.
- */import com.directorysync.gui.ConfirmBox;
-
-import java.io.IOException;
-
+ */
 public class DirectorySync {
     //public static Path targetDirectory = Paths.get("./trgDir");
     //public static Path srcDirectory = Paths.get("./srcDir");
-    public static List<Path> syncDirectories = new ArrayList<>();;
     public static WatchEvent.Kind<?> kind;
     public static Path targetPath;
     static boolean isDirProcessing = false;
-    public static boolean isLocalExchange = false; // set to false if it is network exchange
+    public static boolean isLocalExchange = true; // set to false if it is network exchange
     public static WatchService watchService;
     public static Map<WatchKey, Path> keys;
+
     /**
      * @brief Deletes all files and directories within a target directory
      * @details This function recursively walks through all files and directories within the specified target directory, and deletes each one. 
@@ -57,14 +56,13 @@ public class DirectorySync {
                     System.err.println("Failed to delete " + path + ": " + e.getMessage());
                 }
             });
-            
     }
+
     /**
     * @brief Deletes a file
     * @details This function deletes a file at the specified path. If the file is on a remote system, it sends the deletion event to the remote system using the ClientSide class.
     * @param file The path of the file to be deleted
     */
-
     public static void deleteFile(Path file) {
         try {
             System.out.println("Deleting file: " + file.getFileName());
@@ -363,9 +361,9 @@ public class DirectorySync {
 
     private static Path constructTargetPath(Path srcPath, Path targetDir) {
         Path srcDir = null;
-        for (Path dir : syncDirectories) {
-            if (srcPath.startsWith(dir)) {
-                srcDir = dir;
+        for (Directory dir : Main.directoryList) {
+            if (srcPath.startsWith((Path) dir)) {
+                srcDir = (Path) dir;
                 break;
             }
         }
@@ -386,8 +384,8 @@ public class DirectorySync {
             watchService = FileSystems.getDefault().newWatchService();
             
             // Register directories for monitoring
-            for (Path dir : syncDirectories) {
-                walkAndRegisterDirectories(dir, watchService, keys);
+            for (Directory dir : Main.directoryList) {
+                walkAndRegisterDirectories((Path) dir, watchService, keys);
             }
 
             // Handle events on files and directories within the registered directories
@@ -417,9 +415,9 @@ public class DirectorySync {
                     //System.out.println("DIR: " + dir);
                     //System.out.println("srcPath: " + srcPath);
 
-                    for (Path target : syncDirectories) {
+                    for (Directory target : Main.directoryList) {
                         //System.out.println("target: " + target);
-                        Path targetPath = constructTargetPath(srcPath, target);
+                        Path targetPath = constructTargetPath(srcPath,(Path) target);
                         System.out.println("targetPath: " + targetPath);
                         WatchKey keyBlock = null;
                         for (Map.Entry<WatchKey, Path> entry : keys.entrySet()) {
@@ -450,7 +448,7 @@ public class DirectorySync {
                                     walkAndRegisterDirectories(srcPath, watchService, keys);
                                     isSrc = true; 
                                 }
-                                if(isLocalExchange){
+                                if(target.isLocal()){
                                     walkAndRegisterDirectories(targetPath, watchService, keys);
                                     System.out.format("Directory '%s' created.%n", filename);
                                 }
@@ -462,8 +460,8 @@ public class DirectorySync {
                             if (!Files.isDirectory(srcPath)) {
                                 while(true) {
                                     try {
-                                        if (isLocalExchange) {
-                                            replaceFile(srcPath, target, true);
+                                        if (target.isLocal()) {
+                                            replaceFile(srcPath,(Path) target, true);
                                         } else {
                                             ClientSide.events(kind.toString(), srcPath);
                                         }
@@ -486,7 +484,7 @@ public class DirectorySync {
                                 deleteAll(targetPath);
                                 System.out.format("Directory '%s' deleted.%n", filename);
                             } else {
-                                if (isLocalExchange) {
+                                if (target.isLocal()) {
                                     try {
                                         Files.delete(targetPath);
                                     } catch (NoSuchFileException e) {
@@ -525,23 +523,10 @@ public class DirectorySync {
             e.printStackTrace();
         }
     }
-    
-    
 
-    /**
-    @brief Adds a directory to the list of synchronized directories.
-    @param dirName The name of the directory to be added.
-    */
-    public static void addSyncDir(String dirName){
-        Path dir = Paths.get(dirName);
-        syncDirectories.add(dir);
-
-    }
 
 
     public static void main(String[] args) {
-        addSyncDir("./trgDir");
-        addSyncDir("./srcDir");
         watchEvents();
     }
 }

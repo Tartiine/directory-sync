@@ -23,7 +23,7 @@ public class Main extends Application {
 
     private Stage window;
     private Scene sceneHome;
-    List<Directory> directories;
+    public static List<Directory> directoryList;
 
     public static void main(String[] args) {
         launch(args);
@@ -36,7 +36,7 @@ public class Main extends Application {
         window.setResizable(false);
         window.setTitle("Directory synchronization");
 
-        directories = new LinkedList<>();
+        directoryList = new LinkedList<>();
 
         Label titleLabel = new Label("Select folders to synchronize");
         titleLabel.getStyleClass().add("titleLabel");
@@ -75,10 +75,10 @@ public class Main extends Application {
         Button addButton = new Button("Add directory");
         addButton.setOnAction(e -> {
             Directory newDir = new Directory("New directory", Path.of(""));
-            directories.add(newDir);
+            directoryList.add(newDir);
             newDir = DirConfigGUI.display(newDir);
             if (newDir.getName() == "%%/Remove/%%")
-                directories.remove(newDir);
+                directoryList.remove(newDir);
             refreshDirsList(dirsLayout);
         });
 
@@ -102,15 +102,15 @@ public class Main extends Application {
 
     private void refreshDirsList (VBox dirsLayout) {
         dirsLayout.getChildren().clear();
-        for (int i = 0; i < directories.size(); i++) {
+        for (int i = 0; i < directoryList.size(); i++) {
             final int currentIndex = i;
-            Button btn = new Button(directories.get(i).getName());
+            Button btn = new Button(directoryList.get(i).getName());
             btn.setMinWidth(250);
             btn.setMaxWidth(250);
             btn.setOnAction(e -> {
-                directories.set(currentIndex, DirConfigGUI.display(directories.get(currentIndex)));
-                if (directories.get(currentIndex).getName() == "%%/Remove/%%")
-                    directories.remove(currentIndex);
+                directoryList.set(currentIndex, DirConfigGUI.display(directoryList.get(currentIndex)));
+                if (directoryList.get(currentIndex).getName() == "%%/Remove/%%")
+                    directoryList.remove(currentIndex);
                 refreshDirsList(dirsLayout);
             });
             dirsLayout.getChildren().add(btn);
