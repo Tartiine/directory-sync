@@ -337,11 +337,10 @@ public class DirectorySync {
     /**
      * @brief Registers the given directory, and all its sub-directories, with the WatchService
      * @details This function recursively walks through the given directory, and all its sub-directories, and registers them with the given WatchService for monitoring file system changes.
-     * @param start The starting directory or list of directories to be monitored
-     * @param ws The WatchService to register directories with
+     * @param start the start directory to begin the recursive search
+     * @param watchService the WatchService to register directories from
      * @param keys The map of registered WatchKeys and corresponding directories
      * @throws IOException If an I/O error occurs
-     * @throws IllegalArgumentException If the start parameter is not a Path or List<Path>
      */
     public static void walkAndRegisterDirectories(Path start, WatchService watchService, Map<WatchKey, Path> keys) throws IOException {
         Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
@@ -353,9 +352,16 @@ public class DirectorySync {
             }
         });
     }
-
-    private static void walkAndUnregisterDirectories(Path root, WatchService watchService, Map<WatchKey, Path> keys) throws IOException {
-        Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+    /**
+     * @brief Unregisters the given directory, and all its sub-directories, with the WatchService
+     * @details This function recursively walks through the given directory, and all its sub-directories, and unregisters them with the given WatchService to stop monitoring file system changes.
+     * @param start the start directory to begin the recursive search
+     * @param watchService the WatchService to unregister directories from
+     * @param keys The map of registered WatchKeys and corresponding directories
+     * @throws IOException if an I/O error occurs
+     */
+    private static void walkAndUnregisterDirectories(Path start, WatchService watchService, Map<WatchKey, Path> keys) throws IOException {
+        Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
                 WatchKey key = keys.keySet().stream().filter(k -> keys.get(k).equals(dir)).findFirst().orElse(null);
@@ -374,7 +380,13 @@ public class DirectorySync {
     }
     
     
-
+    /**
+     * @brief Construct the target path based on the source path and target directory.
+     * @param srcPath The source path.
+     * @param targetDir The target directory.
+     * @return The target path.
+     * @throws IllegalArgumentException If the srcPath does not belong to any of the syncDirectories.
+     */
     private static Path constructTargetPath(Path srcPath, Path targetDir) {
         Path srcDir = null;
         for (Directory dir : Main.directoryList) {
@@ -392,7 +404,18 @@ public class DirectorySync {
     }
     
     
-
+    /**
+     * @brief Monitor directories for file system events.
+     * 
+     * @details This method creates a WatchService to monitor the directories for file system events. It registers all the directories
+     * specified in the Main.directoryList for monitoring, and then enters an infinite loop to handle events on files and
+     * directories within those directories. When a file system event occurs, it prints a message indicating the type of event
+     * and the file or directory affected. If the file is a temporary file or has a filename that ends with ".tmp", it ignores
+     * the event. Otherwise, it constructs the target path for the event using constructTargetPath(), and then performs the
+     * appropriate action depending on the type of event. If the event is a CREATE event, it creates the file or directory
+     * in the target directory, and if the event is a MODIFY event, it replaces the file in the target directory with the
+     * new version of the file. If the event is a DELETE event, it deletes the file or directory from the target directory.
+     */
     public static void watchEvents() {
         try {
             // Create a WatchService
@@ -430,7 +453,6 @@ public class DirectorySync {
                     Path srcPath = dir.resolve(filename);
 
                     for (Directory target : Main.directoryList) {
-                        //System.out.println("target: " + target);
                         targetPath = constructTargetPath(srcPath,target.getPath());
                         System.out.println("targetPath: " + targetPath);
 
@@ -452,7 +474,7 @@ public class DirectorySync {
                         }
 
                         if (kind == StandardWatchEventKinds.OVERFLOW) {
-                            // Handle overflow events for later
+                            // Handle overflow events
                             continue;
                         }
                 
