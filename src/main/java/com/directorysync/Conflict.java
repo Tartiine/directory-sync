@@ -43,10 +43,13 @@ public class Conflict {
     public Integer getTargetFileIndex(int index) {
         return concernedFiles.get(index);
     }
+    public Path getConcernedPath(int index) {
+        return targetFiles.get(getTargetFileIndex(index));
+    }
     public int getConcernedFilesLength() {
         return concernedFiles.size();
     }
-    public void setTargetFiles (List<Path> targetPaths) {
+    public void setTargetFiles(List<Path> targetPaths) {
         targetFiles = targetPaths;
     }
 
