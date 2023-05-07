@@ -28,14 +28,12 @@ import com.directorysync.gui.Main;
  * @note This class assumes that the directories are on the same system unless specified otherwise.
  */
 public class DirectorySync {
-    //public static Path targetDirectory = Paths.get("./trgDir");
-    //public static Path srcDirectory = Paths.get("./srcDir");
     public static WatchEvent.Kind<?> kind;
     public static Path targetPath;
     static boolean isDirProcessing = false;
     public static boolean isLocalExchange = true; // set to false if it is network exchange
-    public static WatchService watchService;
-    public static Map<WatchKey, Path> keys;
+    //public static WatchService watchService;
+    //public static Map<WatchKey, Path> keys;
 
     /**
      * @brief Deletes all files and directories within a target directory
@@ -134,7 +132,7 @@ public class DirectorySync {
     /**
     * @brief Synchronizes a target directory with a recovery directory
     * @details This method deletes all files and directories in the target directory, and then copies all files and directories from the recovery directory to the target directory.
-    * @param targetPath The path of the target directory to be synchronized
+    * @param targetPaths The path of the target directory to be synchronized
     * @param recoveryPath The path of the recovery directory to be used for synchronization
     * @throws IOException If an I/O error occurs, or if either the target or recovery directory does not exist
     */
@@ -380,8 +378,8 @@ public class DirectorySync {
     public static void watchEvents() {
         try {
             // Create a WatchService
-            keys = new HashMap<>();
-            watchService = FileSystems.getDefault().newWatchService();
+            Map<WatchKey, Path> keys = new HashMap<>();
+            WatchService watchService = FileSystems.getDefault().newWatchService();
             
             // Register directories for monitoring
             for (Directory dir : Main.directoryList) {
@@ -403,7 +401,7 @@ public class DirectorySync {
                 }
                 
                 for (WatchEvent<?> event : key.pollEvents()) {
-                    kind = event.kind();
+                    WatchEvent.Kind<?> kind = event.kind();
                     System.out.println("Event kind:" + kind + ". File affected: " + event.context() + ".");
                     Path filename = (Path) event.context();
                     if (filename.toString().contains("~") || filename.toString().endsWith(".tmp")){
@@ -412,13 +410,12 @@ public class DirectorySync {
                     boolean isSrc = false;
     
                     Path srcPath = dir.resolve(filename);
-                    //System.out.println("DIR: " + dir);
-                    //System.out.println("srcPath: " + srcPath);
 
                     for (Directory target : Main.directoryList) {
                         //System.out.println("target: " + target);
-                        Path targetPath = constructTargetPath(srcPath,target.getPath());
+                        targetPath = constructTargetPath(srcPath,target.getPath());
                         System.out.println("targetPath: " + targetPath);
+
                         WatchKey keyBlock = null;
                         for (Map.Entry<WatchKey, Path> entry : keys.entrySet()) {
                             if (entry.getValue().equals(targetPath)) {
@@ -458,20 +455,21 @@ public class DirectorySync {
                             }
                         } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
                             if (!Files.isDirectory(srcPath)) {
-                                while(true) {
-                                    try {
-                                        if (target.isLocal()) {
-                                            replaceFile(srcPath,target.getPath(), true);
-                                        } else {
-                                            ClientSide.events(kind.toString(), srcPath);
-                                        }
-                                        System.out.format("File '%s' modified.%n", filename);
-                                        break;
-                                    } catch (IOException e) {
-                                        // File is locked, wait for a 1s and try again
-                                        Thread.sleep(1000);
+                                try {
+                                    if (target.isLocal()) {
+                                        watchService.close();
+                                        replaceFile(srcPath,target.getPath(), true);
+                                        watchService = FileSystems.getDefault().newWatchService();
+                                    } else {
+                                        ClientSide.events(kind.toString(), srcPath);
                                     }
+                                    System.out.format("File '%s' modified.%n", filename);
+                                    break;
+                                } catch (IOException e) {
+                                    // File is locked, wait for a 1s and try again
+                                    Thread.sleep(1000);
                                 }
+                            
                             }
                             
                         } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
@@ -499,6 +497,8 @@ public class DirectorySync {
                         try {
                             WatchKey newKey = targetPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY);
                             keys.put(newKey, targetPath);
+                            WatchKey newKey1 = srcPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY);
+                            keys.put(newKey1, srcPath);
                         } catch (NoSuchFileException e) {
                             System.err.println("Failed to register " + targetPath + " for watching: " + e.getMessage());
                         } catch (NotDirectoryException e) {
