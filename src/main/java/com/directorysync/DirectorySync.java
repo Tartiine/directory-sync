@@ -160,8 +160,8 @@ public class DirectorySync {
             }
         }
         for (Path path : targetPaths) {
-            System.out.println("deleteAll(" + path + ")");
-            System.out.println("copyAll(" + path + ", " + recoveryPath + ")");
+            deleteAll(path);
+            copyAll(path, recoveryPath);
         }
     }
 
@@ -362,8 +362,8 @@ public class DirectorySync {
     private static Path constructTargetPath(Path srcPath, Path targetDir) {
         Path srcDir = null;
         for (Directory dir : Main.directoryList) {
-            if (srcPath.startsWith((Path) dir)) {
-                srcDir = (Path) dir;
+            if (srcPath.startsWith(dir.getPath())) {
+                srcDir = dir.getPath();
                 break;
             }
         }
@@ -385,7 +385,7 @@ public class DirectorySync {
             
             // Register directories for monitoring
             for (Directory dir : Main.directoryList) {
-                walkAndRegisterDirectories((Path) dir, watchService, keys);
+                walkAndRegisterDirectories(dir.getPath(), watchService, keys);
             }
 
             // Handle events on files and directories within the registered directories
@@ -417,7 +417,7 @@ public class DirectorySync {
 
                     for (Directory target : Main.directoryList) {
                         //System.out.println("target: " + target);
-                        Path targetPath = constructTargetPath(srcPath,(Path) target);
+                        Path targetPath = constructTargetPath(srcPath,target.getPath());
                         System.out.println("targetPath: " + targetPath);
                         WatchKey keyBlock = null;
                         for (Map.Entry<WatchKey, Path> entry : keys.entrySet()) {
@@ -461,7 +461,7 @@ public class DirectorySync {
                                 while(true) {
                                     try {
                                         if (target.isLocal()) {
-                                            replaceFile(srcPath,(Path) target, true);
+                                            replaceFile(srcPath,target.getPath(), true);
                                         } else {
                                             ClientSide.events(kind.toString(), srcPath);
                                         }
@@ -522,12 +522,6 @@ public class DirectorySync {
             // Handle exceptions
             e.printStackTrace();
         }
-    }
-
-
-
-    public static void main(String[] args) {
-        watchEvents();
     }
 }
 

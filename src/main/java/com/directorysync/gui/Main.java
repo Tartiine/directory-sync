@@ -14,7 +14,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -38,35 +37,11 @@ public class Main extends Application {
 
         directoryList = new LinkedList<>();
 
+        directoryList.add(new Directory("folder 1", Path.of("/home/isaac/Bureau/folder 1")));
+        directoryList.add(new Directory("folder 2", Path.of("/home/isaac/Bureau/folder 2")));
+
         Label titleLabel = new Label("Select folders to synchronize");
         titleLabel.getStyleClass().add("titleLabel");
-
-        Button hardSyncButton = new Button("Hard synchronization");
-        /*hardSyncButton.setOnAction(e -> {
-            try {
-                List<Path> targetPaths = new LinkedList<Path>();
-                targetPaths.add(Path.of(secondDirChooser.getTextField().getText()));
-                DirectorySync.hardSynchronization(
-                    targetPaths,
-                    Path.of(firstDirChooser.getTextField().getText()),
-                    true
-                );
-            } catch (IOException exception) {
-                AlertBox.display("Error", exception.getMessage());
-            }
-        });*/
-
-        Button softSyncButton = new Button("Soft synchronization");
-        /*softSyncButton.setOnAction(e -> {
-            try {
-                List<Path> targetPaths = new LinkedList<Path>();
-                targetPaths.add(Path.of(firstDirChooser.getTextField().getText()));
-                targetPaths.add(Path.of(secondDirChooser.getTextField().getText()));
-                DirectorySync.softSynchronization(targetPaths);
-            } catch (IOException exception) {
-                AlertBox.display("Error", exception.getMessage());
-            }
-        });*/
 
         VBox dirsLayout = new VBox(10);
         dirsLayout.setAlignment(Pos.TOP_CENTER);
@@ -83,6 +58,39 @@ public class Main extends Application {
         });
 
         Button startSyncButton = new Button("Start synchronization");
+        startSyncButton.setOnAction(e -> {
+            if (directoryList.size() < 2) {
+                AlertBox.display("Not enough directories", "Please select at least two directories to synchronize.");
+                return;
+            }
+            int syncType = SyncTypePopup.display();
+
+            if (syncType == 0) {
+                //Hard synchronization
+                try {
+                    List<Path> targetPaths = new LinkedList<Path>();
+                    for(Directory dir:directoryList)
+                        targetPaths.add(dir.getPath());
+                    Path srcPath = targetPaths.get(0);
+                    targetPaths.remove(0);
+                    DirectorySync.hardSynchronization(targetPaths, srcPath, true);
+                } catch (IOException exception) {
+                    AlertBox.display("Error", exception.getMessage());
+                }
+                DirectorySync.watchEvents();
+            } else if (syncType == 1) {
+                //Soft synchronization
+                try {
+                    List<Path> targetPaths = new LinkedList<Path>();
+                    for(Directory dir:directoryList)
+                        targetPaths.add(dir.getPath());
+                    DirectorySync.softSynchronization(targetPaths);
+                } catch (IOException exception) {
+                    AlertBox.display("Error", exception.getMessage());
+                }
+                DirectorySync.watchEvents();
+            }
+        });
 
         HBox actionButtons = new HBox(10);
         //actionButtons.getChildren().addAll(hardSyncButton, softSyncButton);
