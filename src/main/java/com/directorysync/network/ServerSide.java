@@ -28,8 +28,9 @@ public class ServerSide {
 
         ServerSocket servsock;
 
-        servsock = new ServerSocket(3456);
-        System.out.println("Server started on port 3456.");
+			servsock = new ServerSocket(3456);
+			System.out.println("Server started on port 3456.");
+
 
         while (true) {
             System.out.println("Waiting for incoming connections...");

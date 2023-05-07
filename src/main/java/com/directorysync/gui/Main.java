@@ -1,29 +1,29 @@
 package com.directorysync.gui;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.LinkedList;
+import java.util.List;
+
+import com.directorysync.Directory;
+import com.directorysync.DirectorySync;
+
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
-import javafx.stage.DirectoryChooser;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 public class Main extends Application {
 
-    Stage window;
-    Scene sceneHome, scene2, sceneForm;
+    private Stage window;
+    private Scene sceneHome;
+    List<Directory> directories;
 
     public static void main(String[] args) {
         launch(args);
@@ -36,75 +36,84 @@ public class Main extends Application {
         window.setResizable(false);
         window.setTitle("Directory synchronization");
 
-        HBox topMenu = new HBox();
-        /*Button buttonMenuA = new Button("File");
-        Button buttonMenuB = new Button("Edit");
-        Button buttonMenuC = new Button("View");
-        topMenu.getChildren().addAll(buttonMenuA, buttonMenuB, buttonMenuC);*/
+        directories = new LinkedList<>();
+        directories.add(new Directory("Directory 1", Path.of("testPath"), "ip"));
+        directories.add(new Directory("Test 2", Path.of("test2")));
+        directories.add(new Directory("The third one", Path.of("test3")));
 
         Label titleLabel = new Label("Select folders to synchronize");
-
-        GridPane folderSelectionGrid = new GridPane();
-        folderSelectionGrid.setPadding(new Insets(10));
-        folderSelectionGrid.setVgap(8);
-        folderSelectionGrid.setHgap(10);
-
-        Button firstFolderSelectButton = new Button("F");
-        firstFolderSelectButton.setOnAction(e -> {
-            DirectoryChooser dirChooser = new DirectoryChooser();
-            dirChooser.setTitle("Select a folder to synchronize");
-            AnchorPane anchorPane;
-            //Stage popupStage = (Stage)anchorPane.getScene().getWindow();
-            //File folder = dirChooser.showDialog(popupStage);
-        });
-        GridPane.setConstraints(firstFolderSelectButton, 0, 0);
-
-        TextField firstFolderPathField = new TextField();
-        firstFolderPathField.setPromptText("First folder path");
-        firstFolderPathField.setId("italic-label");
-        GridPane.setConstraints(firstFolderPathField, 1, 0);
-
-        Button secondFolderSelectButton = new Button("F");
-        GridPane.setConstraints(secondFolderSelectButton, 0, 1);
-
-        TextField secondFolderPathField = new TextField();
-        secondFolderPathField.setPromptText("Second folder path");
-        secondFolderPathField.setId("italic-label");
-        GridPane.setConstraints(secondFolderPathField, 1, 1);
+        titleLabel.getStyleClass().add("titleLabel");
 
         Button hardSyncButton = new Button("Hard synchronization");
-        GridPane.setConstraints(hardSyncButton, 1, 2);
-        hardSyncButton.setOnAction(e -> AlertBox.display("Directory Sync", "Hard synchronization started!"));
+        /*hardSyncButton.setOnAction(e -> {
+            try {
+                List<Path> targetPaths = new LinkedList<Path>();
+                targetPaths.add(Path.of(secondDirChooser.getTextField().getText()));
+                DirectorySync.hardSynchronization(
+                    targetPaths,
+                    Path.of(firstDirChooser.getTextField().getText()),
+                    true
+                );
+            } catch (IOException exception) {
+                AlertBox.display("Error", exception.getMessage());
+            }
+        });*/
 
-        folderSelectionGrid.getChildren().addAll(
-            firstFolderSelectButton,
-            firstFolderPathField,
-            secondFolderSelectButton,
-            secondFolderPathField,
-            hardSyncButton
-        );
+        Button softSyncButton = new Button("Soft synchronization");
+        /*softSyncButton.setOnAction(e -> {
+            try {
+                List<Path> targetPaths = new LinkedList<Path>();
+                targetPaths.add(Path.of(firstDirChooser.getTextField().getText()));
+                targetPaths.add(Path.of(secondDirChooser.getTextField().getText()));
+                DirectorySync.softSynchronization(targetPaths);
+            } catch (IOException exception) {
+                AlertBox.display("Error", exception.getMessage());
+            }
+        });*/
 
-        VBox layout1 = new VBox(10);
-        layout1.getChildren().addAll(titleLabel, folderSelectionGrid);
-        layout1.setAlignment(Pos.CENTER);
-        layout1.setPadding(new Insets(20, 10, 20, 10));
+        HBox actionButtons = new HBox(10);
+        actionButtons.getChildren().addAll(hardSyncButton, softSyncButton);
         
-        BorderPane borderPane = new BorderPane();
-        borderPane.setTop(topMenu);
-        borderPane.setCenter(layout1);
+        VBox dirsLayout = new VBox(10);
+        dirsLayout.setAlignment(Pos.TOP_CENTER);
+        refreshDirsList(dirsLayout);
+
+        VBox mainLayout = new VBox(30);
+        mainLayout.getChildren().addAll(titleLabel, dirsLayout, actionButtons);
+        mainLayout.setAlignment(Pos.CENTER);
+        mainLayout.setPadding(new Insets(20));
         
-        sceneHome = new Scene(borderPane);
+        sceneHome = new Scene(mainLayout);
         sceneHome.getStylesheets().add("styleForm.css");
 
         window.setScene(sceneHome);
         window.show();
     }
 
+    private void refreshDirsList (VBox dirsLayout) {
+        dirsLayout.getChildren().clear();
+        for (int i = 0; i < directories.size(); i++) {
+            final int currentIndex = i;
+            Button btn = new Button(directories.get(i).getName());
+            btn.setMinWidth(250);
+            btn.setMaxWidth(250);
+            btn.setOnAction(e -> {
+                directories.set(currentIndex, DirConfigGUI.display(directories.get(currentIndex)));
+                if (directories.get(currentIndex).getName() == "%%/Remove/%%")
+                    directories.remove(currentIndex);
+                refreshDirsList(dirsLayout);
+            });
+            dirsLayout.getChildren().add(btn);
+        }
+        window.sizeToScene();
+    }
+
     private void closeProgram() {
-        //Boolean answer = ConfirmBox.display("Confirmation", "Are you sure you want to close the program?");
-        //if (answer) {
+        //if (communication is active)
+        Boolean answer = ConfirmBox.display("Confirmation", "By exiting the program, the synchronization will end.\nAre you sure you want to exit the program?");
+        if (answer) {
             System.out.println("Program closed");
             window.close();
-        //}
+        }
     }
 }
