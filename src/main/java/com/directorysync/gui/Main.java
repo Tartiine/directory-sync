@@ -37,9 +37,6 @@ public class Main extends Application {
         window.setTitle("Directory synchronization");
 
         directories = new LinkedList<>();
-        directories.add(new Directory("Directory 1", Path.of("testPath"), "ip"));
-        directories.add(new Directory("Test 2", Path.of("test2")));
-        directories.add(new Directory("The third one", Path.of("test3")));
 
         Label titleLabel = new Label("Select folders to synchronize");
         titleLabel.getStyleClass().add("titleLabel");
@@ -71,12 +68,25 @@ public class Main extends Application {
             }
         });*/
 
-        HBox actionButtons = new HBox(10);
-        actionButtons.getChildren().addAll(hardSyncButton, softSyncButton);
-        
         VBox dirsLayout = new VBox(10);
         dirsLayout.setAlignment(Pos.TOP_CENTER);
         refreshDirsList(dirsLayout);
+
+        Button addButton = new Button("Add directory");
+        addButton.setOnAction(e -> {
+            Directory newDir = new Directory("New directory", Path.of(""));
+            directories.add(newDir);
+            newDir = DirConfigGUI.display(newDir);
+            if (newDir.getName() == "%%/Remove/%%")
+                directories.remove(newDir);
+            refreshDirsList(dirsLayout);
+        });
+
+        Button startSyncButton = new Button("Start synchronization");
+
+        HBox actionButtons = new HBox(10);
+        //actionButtons.getChildren().addAll(hardSyncButton, softSyncButton);
+        actionButtons.getChildren().addAll(addButton, startSyncButton);
 
         VBox mainLayout = new VBox(30);
         mainLayout.getChildren().addAll(titleLabel, dirsLayout, actionButtons);
